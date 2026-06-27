@@ -517,6 +517,14 @@ python train.py \
 - **Per-phase validation metrics:** PSNR, codebook perplexity, token accuracy, planning L1
 - **Mixed precision + gradient clipping** `[SELF-IMPLEMENTED]`
 
+## Quality Fixes (Expert Review 2026-06-27)
+
+| Issue | Severity | Fix Applied |
+|-------|----------|-------------|
+| Positional embedding buffer too small for interleaved action tokens | High | Sized for `max_frames * (tokens_per_frame + 1)` |
+| Planner phase had zero gradient flow (rewards under no_grad) | High | Added action log-probs for REINFORCE-style policy gradient |
+| `frame_sep` parameter defined but unused | Low | Documented (dead code, no runtime impact) |
+
 ## Files
 
 ```

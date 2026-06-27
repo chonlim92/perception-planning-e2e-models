@@ -902,13 +902,16 @@ def train_planner(  # [FROM PAPER] Phase 3 / Section 3.3
                     rewards = planner._score_imagined_futures(imagined, candidates_b)
                 batch_rewards.append(rewards)
 
-            # Compute planning loss  # [FROM PAPER]
+            # Compute planning loss with policy gradient  # [FROM PAPER]
             optimizer.zero_grad()
             total_plan_loss = torch.tensor(0.0, device=device)
 
             for b in range(B):
                 rewards = batch_rewards[b]
-                losses = planning_loss_fn(candidates_list[b], rewards)
+                # Compute log-probs of candidates under the prior (Gaussian with std=0.2)
+                diff = candidates_list[b] - action_mean[b:b+1]
+                action_log_probs = -0.5 * (diff / 0.2).pow(2).sum(dim=(1, 2))
+                losses = planning_loss_fn(candidates_list[b], rewards, action_log_probs)
                 total_plan_loss = total_plan_loss + losses['total_loss']
                 epoch_rewards.append(losses['best_reward'].item())
 

@@ -89,9 +89,9 @@ class MLPScorer(nn.Module):
         traj_flat = trajectory.reshape(B, -1)
         traj_feat = self.traj_encoder(traj_flat)  # (B, hidden/2)
 
-        # Encode agents with masking
+        # Encode agents with masking (use -inf for invalid agents before max-pool)
         agent_feat = self.agent_encoder(agents)  # (B, N, hidden/2)
-        agent_feat = agent_feat * agent_mask.unsqueeze(-1).float()
+        agent_feat = agent_feat.masked_fill(~agent_mask.unsqueeze(-1), float('-inf'))
         agent_pooled = agent_feat.max(dim=1)[0]  # (B, hidden/2)
 
         # Encode map

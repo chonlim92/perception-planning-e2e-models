@@ -22,7 +22,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-from tqdm import tqdm
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(iterable, **kwargs):
+        return iterable
 
 from model import VAD
 
@@ -470,7 +474,7 @@ def train_one_epoch(model: nn.Module, dataloader: DataLoader,
                     criterion: VADLoss, optimizer: torch.optim.Optimizer,
                     scaler: torch.amp.GradScaler, device: torch.device,
                     epoch: int, max_grad_norm: float = 5.0,
-                    use_amp: bool = True) -> Dict[str, float]:  # [SELF-IMPLEMENTED]
+                    use_amp: bool = True, scheduler=None) -> Dict[str, float]:  # [SELF-IMPLEMENTED]
     """
     Train VAD for one epoch.
 
@@ -523,6 +527,10 @@ def train_one_epoch(model: nn.Module, dataloader: DataLoader,
             # [FROM PAPER] Gradient clipping for stable training
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
             optimizer.step()
+
+        # Step LR scheduler per iteration (not per epoch)
+        if scheduler is not None:
+            scheduler.step()
 
         # Accumulate losses
         for key in epoch_losses:
@@ -891,12 +899,11 @@ def main():
         # Train one epoch
         train_losses = train_one_epoch(
             model, train_loader, criterion, optimizer, scaler,
-            device, epoch, max_grad_norm=args.max_grad_norm, use_amp=use_amp)
+            device, epoch, max_grad_norm=args.max_grad_norm, use_amp=use_amp,
+            scheduler=scheduler)
 
-        # Step scheduler after each batch (already done implicitly via LambdaLR)
-        # For epoch-level stepping, advance scheduler by number of batches
-        for _ in range(len(train_loader)):
-            scheduler.step()
+        # Scheduler stepping is handled inside train_one_epoch (per-iteration)
+        # No additional stepping needed here
 
         epoch_time = time.time() - epoch_start
 

@@ -441,6 +441,33 @@ This helps you distinguish research contributions from engineering decisions.
 
 ---
 
+## Quality Assurance: Expert ML Review
+
+All 13 model implementations have been reviewed by a panel of 5 independent ML expert agents, covering:
+
+- **Architecture correctness** — attention mechanisms, residual connections, positional encodings
+- **Training dynamics** — loss functions, optimizer configuration, LR scheduling, gradient flow
+- **Numerical stability** — NaN/Inf prevention, mixed-precision safety, device compatibility
+- **Safety & planning** — trajectory feasibility, collision checking, RSS compliance
+- **Runtime validation** — forward/backward pass testing on all models
+
+### Key Improvements Made
+
+| Issue | Severity | Model | Fix |
+|-------|----------|-------|-----|
+| LR scheduler bulk-stepped at epoch end | Critical | VAD | Per-iteration stepping inside training loop |
+| Positional embedding buffer overflow | High | GAIA-1 | Sized for `(tokens_per_frame + 1)` per frame |
+| Division-by-zero in time embedding | High | GenAD | Safe division with `max(half_dim - 1, 1)` |
+| Non-differentiable collision loss | High | UniAD | Replaced `.long()` indexing with `F.grid_sample()` |
+| Planner has zero gradient flow | High | GAIA-1 | Added action log-probs for policy gradient |
+| Scheduler collapses per-group LRs | High | DriveVLM | Per-group `lr_scale` preservation |
+| Ranking loss executes only once | High | Planner Scorer | Vectorized pairwise margin computation |
+| RSS safe distance can be negative | High | Safety Checker | Clamped to `max(0, d_safe)` |
+
+**Full validation report:** [`docs/expert_validation_report.md`](docs/expert_validation_report.md)
+
+---
+
 ## License
 
 This repository is for **research and educational purposes**. Individual model implementations may have their own licenses — refer to the original papers and repositories.

@@ -145,22 +145,16 @@ class ScorerLoss(nn.Module):
             losses['bce'] = bce
 
         if self.loss_type in ('ranking', 'combined'):
-            # Margin ranking: expert should score higher than all others
+            # Margin ranking: expert should score higher than all non-experts
             B, K = scores.shape
             expert_scores = scores.gather(1, expert_idx.unsqueeze(1))  # (B, 1)
-            # Compare expert to all non-expert
-            ranking_loss = torch.tensor(0.0, device=scores.device)
-            count = 0
-            for i in range(K):
-                mask = (torch.arange(K, device=scores.device) != expert_idx.unsqueeze(0)).float()
-                if mask.sum() > 0:
-                    neg_scores = scores * mask + scores.min() * (1 - mask)
-                    loss_i = F.relu(self.margin - expert_scores + neg_scores).mean()
-                    ranking_loss = ranking_loss + loss_i
-                    count += 1
-                break  # simplified: compare expert to mean of others
-            if count > 0:
-                ranking_loss = ranking_loss / count
+            # Build mask: True for non-expert positions
+            idx_range = torch.arange(K, device=scores.device).unsqueeze(0).expand(B, -1)
+            non_expert_mask = (idx_range != expert_idx.unsqueeze(1))  # (B, K)
+            # Compute pairwise margin loss against all non-experts
+            margin_violations = F.relu(self.margin - expert_scores + scores)  # (B, K)
+            margin_violations = margin_violations * non_expert_mask.float()
+            ranking_loss = margin_violations.sum() / non_expert_mask.float().sum().clamp(min=1)
             losses['ranking'] = ranking_loss
 
         if self.loss_type in ('contrastive', 'combined'):

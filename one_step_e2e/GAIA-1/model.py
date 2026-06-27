@@ -138,7 +138,7 @@ class WorldModelTransformer(nn.Module):
 
         # Token embeddings
         self.token_embed = nn.Embedding(num_codes, d_model)
-        self.pos_embed = nn.Embedding(max_frames * tokens_per_frame, d_model)
+        self.pos_embed = nn.Embedding(max_frames * (tokens_per_frame + 1), d_model)
 
         # Action embedding (continuous → token space)
         self.action_embed = nn.Sequential(

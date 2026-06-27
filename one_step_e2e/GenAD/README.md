@@ -711,6 +711,14 @@ python train.py \
 - **Mixed precision + gradient clipping** `[SELF-IMPLEMENTED]`
 - **Cosine LR with warmup** `[SELF-IMPLEMENTED]`
 
+## Quality Fixes (Expert Review 2026-06-27)
+
+| Issue | Severity | Fix Applied |
+|-------|----------|-------------|
+| Division by zero in `SinusoidalTimeEmbedding` when `dim=2` | High | `max(half_dim - 1, 1)` safe division |
+| NaN from `(1 - alpha_prev - sigma**2).sqrt()` going negative | Medium | `.clamp(min=0)` before sqrt |
+| CPU tensor created on CUDA execution path | Medium | Explicit `device=device` on tensor creation |
+
 ## Files in This Directory
 
 ```

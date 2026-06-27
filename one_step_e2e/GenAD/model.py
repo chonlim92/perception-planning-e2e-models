@@ -24,7 +24,7 @@ class SinusoidalTimeEmbedding(nn.Module):
 
     def forward(self, t: torch.Tensor) -> torch.Tensor:
         half_dim = self.dim // 2
-        emb = math.log(10000) / (half_dim - 1)
+        emb = math.log(10000) / max(half_dim - 1, 1)
         emb = torch.exp(torch.arange(half_dim, device=t.device) * -emb)
         emb = t.unsqueeze(-1) * emb.unsqueeze(0)
         return torch.cat([emb.sin(), emb.cos()], dim=-1)
@@ -232,7 +232,7 @@ class GenAD(nn.Module):
 
             # DDPM update
             alpha = self.alphas_cumprod[t_idx]
-            alpha_prev = self.alphas_cumprod[t_idx - 1] if t_idx > 0 else torch.tensor(1.0)
+            alpha_prev = self.alphas_cumprod[t_idx - 1] if t_idx > 0 else torch.tensor(1.0, device=device)
             beta = self.betas[t_idx]
 
             x0_pred = (x - (1 - alpha).sqrt() * predicted_noise) / alpha.sqrt()
@@ -241,7 +241,7 @@ class GenAD(nn.Module):
             if t_idx > 0:
                 noise = torch.randn_like(x)
                 sigma = ((1 - alpha_prev) / (1 - alpha) * beta).sqrt()
-                x = alpha_prev.sqrt() * x0_pred + (1 - alpha_prev - sigma**2).sqrt() * predicted_noise + sigma * noise
+                x = alpha_prev.sqrt() * x0_pred + (1 - alpha_prev - sigma**2).clamp(min=0).sqrt() * predicted_noise + sigma * noise
             else:
                 x = x0_pred
 

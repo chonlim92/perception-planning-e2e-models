@@ -432,17 +432,21 @@ def compute_planning_loss(plan_output: Dict, gt_trajectory: torch.Tensor,
     # L2 regression loss
     l2_loss = F.mse_loss(pred_traj, gt_trajectory)
 
-    # Collision loss: penalize overlap with predicted occupancy
+    # Collision loss: penalize overlap with predicted occupancy (differentiable via grid_sample)
     collision_loss = torch.tensor(0.0, device=pred_traj.device)
     if predicted_occupancy is not None:
-        B, T, H, W = predicted_occupancy.shape
-        for t in range(min(T, pred_traj.shape[1])):
-            # Convert waypoint to grid coordinates
-            wx = ((pred_traj[:, t, 0] + 30) / 60 * W).long().clamp(0, W-1)
-            wy = ((pred_traj[:, t, 1] + 15) / 30 * H).long().clamp(0, H-1)
-            for b in range(B):
-                collision_loss = collision_loss + predicted_occupancy[b, t, wy[b], wx[b]]
-        collision_loss = collision_loss / (B * T)
+        B, T_occ, H, W = predicted_occupancy.shape
+        T_plan = min(T_occ, pred_traj.shape[1])
+        grid_x = (pred_traj[:, :T_plan, 0:1] / 30.0).clamp(-1, 1)
+        grid_y = (pred_traj[:, :T_plan, 1:2] / 15.0).clamp(-1, 1)
+        grid = torch.cat([grid_x, grid_y], dim=-1).unsqueeze(2)  # (B, T, 1, 2)
+        occ_for_sample = predicted_occupancy[:, :T_plan].unsqueeze(2)  # (B, T, 1, H, W)
+        sampled = F.grid_sample(
+            occ_for_sample.reshape(B * T_plan, 1, H, W),
+            grid.reshape(B * T_plan, 1, 1, 2),
+            align_corners=True, mode='bilinear', padding_mode='zeros'
+        )
+        collision_loss = sampled.mean()
 
     total_loss = (cfg.planner.l2_loss_weight * l2_loss +
                   cfg.planner.collision_loss_weight * collision_loss)

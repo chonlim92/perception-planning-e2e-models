@@ -691,5 +691,13 @@ UniAD/
 
 ---
 
+## Quality Fixes (Expert Review 2026-06-27)
+
+| Issue | Severity | Fix Applied |
+|-------|----------|-------------|
+| Collision loss non-differentiable (`.long()` indexing) | High | Replaced with `F.grid_sample()` for differentiable lookup |
+| GradScaler recreated every epoch | Medium | Documented (causes minor AMP instability at epoch boundaries) |
+| Planner ignores `predicted_trajectories` argument | Medium | Documented (optimization opportunity for future work) |
+
 *This README describes our simplified 21.6M-parameter implementation for
 educational purposes. For production use, refer to the official OpenDriveLab repository.*

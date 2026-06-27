@@ -808,3 +808,14 @@ Each layer is independent and any single layer can save the system even if other
 - `../one_step_e2e/GenAD/` -- Diffusion-based planner that generates candidates for this scorer
 - `../two_step_e2e/VAD/` -- Model with built-in K-trajectory scoring head
 - `docs/technical_overview.md` -- Deep mathematical treatment of scoring theory
+
+---
+
+## Quality Fixes (Expert Review 2026-06-27)
+
+| Component | Issue | Severity | Fix Applied |
+|-----------|-------|----------|-------------|
+| `learned/train.py` | Ranking loss loop breaks after 1 iteration | High | Vectorized pairwise margin computation |
+| `learned/mlp_scorer.py` | Max-pool masking incorrect for negative features | Medium | `masked_fill(~mask, -inf)` before max |
+| `classical/safety_checker.py` | RSS safe distance can be negative | High | Clamped to `max(0, d_safe)` |
+| `classical/safety_checker.py` | No lateral RSS check | Low | Documented (longitudinal-only is standard simplification) |

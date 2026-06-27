@@ -766,11 +766,12 @@ class WarmupCosineScheduler:
         self.current_step = 0
 
     def step(self):
-        """Update learning rate based on current step."""
+        """Update learning rate based on current step, preserving per-group LR ratios."""
         self.current_step += 1
         lr = self.get_lr()
         for param_group in self.optimizer.param_groups:
-            param_group['lr'] = lr
+            lr_scale = param_group.get('lr_scale', 1.0)
+            param_group['lr'] = lr * lr_scale
 
     def get_lr(self) -> float:
         """Compute current learning rate."""
@@ -1252,16 +1253,19 @@ def train_stage3(args: argparse.Namespace):
         {  # Vision encoder: lower LR to preserve pre-trained features  # [FROM PAPER]
             'params': model.vision_encoder.parameters(),
             'lr': args.learning_rate * args.vision_lr_scale,
+            'lr_scale': args.vision_lr_scale,
             'name': 'vision_encoder',
         },
         {  # Spatial adapter: medium LR  # [FROM PAPER]
             'params': model.spatial_adapter.parameters(),
             'lr': args.learning_rate * args.adapter_lr_scale,
+            'lr_scale': args.adapter_lr_scale,
             'name': 'spatial_adapter',
         },
         {  # LLM: full learning rate  # [FROM PAPER]
             'params': model.llm.parameters(),
             'lr': args.learning_rate,
+            'lr_scale': 1.0,
             'name': 'llm',
         },
     ]

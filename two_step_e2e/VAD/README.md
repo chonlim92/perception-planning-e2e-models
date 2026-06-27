@@ -542,6 +542,14 @@ python train.py \
 - **Mixed precision + gradient clipping** `[SELF-IMPLEMENTED]`
 - **Cosine LR with warmup** `[SELF-IMPLEMENTED]`
 
+## Quality Fixes (Expert Review 2026-06-27)
+
+| Issue | Severity | Fix Applied |
+|-------|----------|-------------|
+| LR scheduler bulk-stepped at epoch end instead of per-iteration | Critical | Moved `scheduler.step()` inside training loop |
+| Missing tqdm import fallback (crash without tqdm) | High | Added `try/except ImportError` with no-op fallback |
+| Winner-take-all may cause mode collapse | Medium | Documented (diversity loss recommended for production) |
+
 ## Files
 
 ```

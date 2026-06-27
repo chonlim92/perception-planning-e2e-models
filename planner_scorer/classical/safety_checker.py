@@ -220,10 +220,11 @@ class SafetyChecker:
                 else:
                     v_f = 0.0
 
-                # RSS longitudinal safe distance
+                # RSS longitudinal safe distance (clamped to >= 0)
                 d_safe = (v_r * rho + 0.5 * a_max * rho**2 +
                           (v_r + a_max * rho)**2 / (2 * b_min) -
                           v_f**2 / (2 * b_max))
+                d_safe = max(0.0, d_safe)
 
                 if dist < d_safe and dist < 50:  # only check nearby
                     violations.append({

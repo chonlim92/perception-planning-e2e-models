@@ -914,6 +914,13 @@ python train.py \
 - **Mixed precision + gradient clipping** `[SELF-IMPLEMENTED]`
 - **Cosine LR with warmup** per training stage `[SELF-IMPLEMENTED]`
 
+## Quality Fixes (Expert Review 2026-06-27)
+
+| Issue | Severity | Fix Applied |
+|-------|----------|-------------|
+| Custom scheduler collapsed all param group LRs to single value | High | Added `lr_scale` per group, scheduler now preserves ratios |
+| `visual_dim` must be divisible by hardcoded `num_heads=12` | Low | Documented (use 192, 384, or 768 for visual_dim) |
+
 ## Files in This Directory
 
 ```
