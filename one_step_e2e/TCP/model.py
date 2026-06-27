@@ -191,7 +191,7 @@ def demo():
     print(f"Control: {out['control'].shape}")
     print(f"Fused steer: {out['fused_steer'][0].item():.3f}")
     print(f"Fusion gate: {out['fusion_gate'][0].item():.3f}")
-    print(f"  (gate=1 → trust trajectory, gate=0 → trust direct control)")
+    print(f"  (gate=1 -> trust trajectory, gate=0 -> trust direct control)")
 
 
 if __name__ == '__main__':

@@ -290,15 +290,17 @@ def compute_drivevlm_loss(output: Dict, gt_trajectory: torch.Tensor,
         traj_loss = F.l1_loss(output['trajectory'], gt_trajectory)
         losses['trajectory'] = traj_loss
 
-    # Language modeling loss
+    # Language modeling loss (only on the text token portion of logits)
     if gt_text_tokens is not None and 'logits' in output:
-        logits = output['logits']  # (B, seq_len, vocab)
-        # Shift for next-token prediction
-        shift_logits = logits[:, :-1].contiguous()
-        shift_labels = gt_text_tokens[:, 1:].contiguous()
+        logits = output['logits']  # (B, total_seq_len, vocab)
+        # Only use the logits corresponding to text positions
+        # Text tokens start after visual tokens
+        num_text_tokens = gt_text_tokens.shape[1]
+        text_logits = logits[:, -num_text_tokens:-1].contiguous()  # (B, T-1, vocab)
+        text_labels = gt_text_tokens[:, 1:].contiguous()           # (B, T-1)
         lm_loss = F.cross_entropy(
-            shift_logits.reshape(-1, shift_logits.shape[-1]),
-            shift_labels.reshape(-1),
+            text_logits.reshape(-1, text_logits.shape[-1]),
+            text_labels.reshape(-1),
             ignore_index=-100)
         losses['language'] = lm_loss
 
@@ -356,20 +358,20 @@ def demo():
     print("=" * 50)
     print("""
     Stage 1: Pre-train vision encoder (CLIP/InternVL)
-             → General visual understanding
+             => General visual understanding
 
     Stage 2: Fine-tune on driving scene descriptions
-             → "There's a pedestrian on the left crosswalk"
+             => "There's a pedestrian on the left crosswalk"
 
     Stage 3: Fine-tune for trajectory generation
-             → Images + command → waypoints as tokens
+             => Images + command => waypoints as tokens
 
     Stage 4: Reinforcement Learning from driving rewards
-             → PPO/DPO improves safety and comfort
+             => PPO/DPO improves safety and comfort
 
     Key Advantage: Chain-of-thought reasoning
-             → Model explains WHY it makes each decision
-             → "Slowing down because pedestrian is crossing"
+             => Model explains WHY it makes each decision
+             => "Slowing down because pedestrian is crossing"
     """)
 
 

@@ -436,7 +436,7 @@ def main():
 
         for i, (traj, name) in enumerate(zip(trajectories, names)):
             result = scorer.score(traj, context)
-            print(f"\n{'─' * 50}")
+            print(f"\n{'-' * 50}")
             print(f"Trajectory {i+1}: {name}")
             print(f"  Total Score: {result['total_score']:.3f}")
             print(f"  Sub-costs:")
