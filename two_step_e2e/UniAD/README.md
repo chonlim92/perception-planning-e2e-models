@@ -622,6 +622,74 @@ If you are new to this field, read these papers in order:
 
 ---
 
-*Last updated: 2025-01. This README describes our simplified 21.6M-parameter
-implementation for educational purposes. For production use, refer to the official
-OpenDriveLab repository.*
+---
+
+## Training
+
+### Quick Start
+
+```bash
+python train.py --epochs 5 --batch_size 2
+```
+
+This runs with synthetic data — no external datasets needed.
+
+### Training Strategy (3-Stage, from paper)
+
+UniAD uses a progressive training strategy `[FROM PAPER]`:
+
+| Stage | What's Trained | Epochs | Learning Rate |
+|:---:|:---|:---:|:---:|
+| 1 | Perception only (tracking + mapping) | 40% | 2e-4 |
+| 2 | + Motion prediction | 30% | 1e-4 |
+| 3 | + Planning (full model) | 30% | 5e-5 |
+
+### Loss Functions
+
+| Loss | Source | Weight | Purpose |
+|:---|:---:|:---:|:---|
+| Planning L2 | `[FROM PAPER]` | 1.0 | Waypoint regression (main objective) |
+| Collision Loss | `[FROM PAPER]` | 5.0 | Penalize predicted paths near agents |
+| Tracking L1 | `[FROM PAPER]` | 0.5 | 3D bounding box regression |
+| Map BCE + Dice | `[FROM PAPER]` | 1.0 | BEV semantic segmentation |
+| Motion L2 | `[FROM PAPER]` | 0.3 | Future trajectory prediction |
+
+### Key Arguments
+
+```bash
+python train.py \
+    --epochs 50 \
+    --batch_size 4 \
+    --lr 2e-4 \
+    --weight_decay 0.01 \
+    --grad_clip 5.0 \
+    --num_samples 500 \
+    --val_split 0.1 \
+    --resume checkpoint.pth  # resume from checkpoint
+```
+
+### What the Training Script Includes
+
+- **Synthetic NuScenes-like dataset** with 6-camera images, LiDAR BEV, ego status
+- **Multi-task loss** balancing perception + prediction + planning `[FROM PAPER]`
+- **3-stage progressive training** that unfreezes modules gradually `[FROM PAPER]`
+- **Collision-aware planning loss** using predicted agent futures `[FROM PAPER]`
+- **Validation loop** with L2 displacement error and collision rate metrics
+- **Mixed precision (AMP)** + gradient clipping `[SELF-IMPLEMENTED]`
+- **Cosine annealing LR** with warmup `[SELF-IMPLEMENTED]`
+- **Checkpoint save/load/resume** with best-model tracking `[SELF-IMPLEMENTED]`
+
+### Files
+
+```
+UniAD/
+├── README.md       # This documentation
+├── model.py        # UniAD model (21.6M params)
+├── config.py       # Hyperparameters
+└── train.py        # Complete training pipeline (1100+ lines)
+```
+
+---
+
+*This README describes our simplified 21.6M-parameter implementation for
+educational purposes. For production use, refer to the official OpenDriveLab repository.*

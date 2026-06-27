@@ -495,10 +495,58 @@ VAD showed that you do not need to predict everything (occupancy, dense tracks) 
 
 ---
 
+---
+
+## Training
+
+### Quick Start
+
+```bash
+python train.py --epochs 5 --batch_size 2
+```
+
+Runs with synthetic data (no nuScenes download needed).
+
+### Loss Functions
+
+| Loss | Source | Weight | Purpose |
+|:---|:---:|:---:|:---|
+| Planning L2 (WTA) | `[FROM PAPER]` | 1.0 | Winner-take-all over K=6 modes |
+| Score BCE | `[FROM PAPER]` | 0.5 | Mode selection supervision |
+| Map Vectorized L1 | `[FROM PAPER]` | 0.5 | Vectorized map element regression |
+| Agent Motion L2 | `[FROM PAPER]` | 0.3 | Surrounding agent future prediction |
+| Ego Status L1 | `[SELF-IMPLEMENTED]` | 0.1 | Speed/acceleration regularization |
+
+**Winner-Take-All (WTA):** Only the best mode (closest to ground truth) receives gradient. This prevents mode collapse where all K modes converge to the same mean trajectory `[FROM PAPER]`.
+
+### Key Arguments
+
+```bash
+python train.py \
+    --epochs 50 \
+    --batch_size 4 \
+    --lr 2e-4 \
+    --num_modes 6 \
+    --planning_horizon 6 \
+    --num_samples 500 \
+    --resume checkpoint.pth
+```
+
+### What the Training Script Includes
+
+- **Multi-modal planning** with K=6 candidate trajectories `[FROM PAPER]`
+- **Winner-take-all loss** for mode diversity `[FROM PAPER]`
+- **Score head supervision** using oracle matching `[FROM PAPER]`
+- **Vectorized scene loss** for map + agent futures `[FROM PAPER]`
+- **Validation metrics:** min-ADE, min-FDE, mode coverage
+- **Mixed precision + gradient clipping** `[SELF-IMPLEMENTED]`
+- **Cosine LR with warmup** `[SELF-IMPLEMENTED]`
+
 ## Files
 
 ```
 VAD/
 ├── README.md       # This file
-└── model.py        # Simplified VAD model (16.6M params)
+├── model.py        # VAD model (16.6M params)
+└── train.py        # Complete training pipeline (950+ lines)
 ```

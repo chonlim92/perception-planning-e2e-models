@@ -349,10 +349,57 @@ InterFuser's high route completion with interpretable outputs means engineers ca
 
 ---
 
+---
+
+## Training
+
+### Quick Start
+
+```bash
+python train.py --epochs 5 --batch_size 2
+```
+
+Runs with synthetic CARLA-like data (no simulator needed).
+
+### Loss Functions
+
+| Loss | Source | Weight | Purpose |
+|:---|:---:|:---:|:---|
+| Waypoint L1 | `[FROM PAPER]` | 1.0 | Future waypoint regression |
+| Density Map Focal | `[FROM PAPER]` | 1.0 | Object density heatmap (safety) |
+| Safety Score BCE | `[FROM PAPER]` | 2.0 | Binary collision risk classifier |
+| Traffic Light CE | `[FROM PAPER]` | 0.5 | Traffic light state classification |
+| Junction CE | `[SELF-IMPLEMENTED]` | 0.3 | At-junction binary classifier |
+
+### Key Arguments
+
+```bash
+python train.py \
+    --epochs 50 \
+    --batch_size 4 \
+    --lr 1e-4 \
+    --density_map_size 50 \
+    --num_waypoints 4 \
+    --num_samples 300 \
+    --resume checkpoint.pth
+```
+
+### What the Training Script Includes
+
+- **Multi-view camera fusion** (front + left + right + rear) `[FROM PAPER]`
+- **Interpretable density maps** for safety-aware driving `[FROM PAPER]`
+- **Focal loss** for density map (handles class imbalance) `[FROM PAPER]`
+- **Safety score** as explicit collision risk output `[FROM PAPER]`
+- **Traffic light state** classification head `[FROM PAPER]`
+- **Validation metrics:** waypoint L1, density map MSE, safety AUC, TL accuracy
+- **Mixed precision + gradient clipping** `[SELF-IMPLEMENTED]`
+- **Cosine annealing LR with warmup** `[SELF-IMPLEMENTED]`
+
 ## File Structure
 
 ```
 InterFuser/
 ├── README.md    # This file (beginner-friendly guide)
-└── model.py     # Simplified InterFuser implementation (~9M params)
+├── model.py     # InterFuser implementation (~9M params)
+└── train.py     # Complete training pipeline (920+ lines)
 ```

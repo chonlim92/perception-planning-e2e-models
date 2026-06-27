@@ -458,15 +458,70 @@ World Model:
 
 ---
 
+---
+
+## Training
+
+### Quick Start
+
+```bash
+python train.py --phase tokenizer --epochs_tokenizer 5
+python train.py --phase world_model --epochs_world_model 5
+python train.py --phase planner --epochs_planner 5
+```
+
+Three separate phases (can train independently). Uses synthetic video sequences.
+
+### Training Phases (3-Phase Pipeline)
+
+GAIA-1 trains three components sequentially `[FROM PAPER]`:
+
+| Phase | Component | Loss | Duration |
+|:---:|:---|:---|:---:|
+| 1 | **Video Tokenizer (VQ-VAE)** | Reconstruction MSE + VQ commitment | Longest |
+| 2 | **World Model Transformer** | Next-token cross-entropy | Medium |
+| 3 | **Planner** | Planning L1 from imagined futures | Shortest |
+
+### Loss Functions
+
+| Loss | Source | Phase | Purpose |
+|:---|:---:|:---:|:---|
+| Reconstruction MSE | `[FROM PAPER]` | 1 | VQ-VAE pixel reconstruction |
+| VQ Commitment | `[FROM PAPER]` | 1 | Codebook learning (β=0.25) |
+| Codebook EMA | `[FROM PAPER]` | 1 | Exponential moving average codebook update |
+| Next-Token CE | `[FROM PAPER]` | 2 | Autoregressive video prediction |
+| Planning L1 | `[FROM PAPER]` | 3 | Trajectory from imagined rollouts |
+| Perceptual Loss | `[SELF-IMPLEMENTED]` | 1 | Feature-space reconstruction quality |
+
+### Key Arguments
+
+```bash
+python train.py \
+    --phase all \            # tokenizer / world_model / planner / all
+    --epochs_tokenizer 100 \
+    --epochs_world_model 50 \
+    --epochs_planner 20 \
+    --codebook_size 512 \
+    --batch_size 4 \
+    --resume_tokenizer ckpt_tok.pth \
+    --resume_world_model ckpt_wm.pth
+```
+
+### What the Training Script Includes
+
+- **3-phase sequential training** (tokenizer → world model → planner) `[FROM PAPER]`
+- **VQ-VAE video tokenizer** with EMA codebook updates `[FROM PAPER]`
+- **Autoregressive world model** (GPT-style next-token prediction on video tokens) `[FROM PAPER]`
+- **Imagination-based planning** that generates future video, then plans `[FROM PAPER]`
+- **Codebook utilization tracking** (dead code detection) `[SELF-IMPLEMENTED]`
+- **Per-phase validation metrics:** PSNR, codebook perplexity, token accuracy, planning L1
+- **Mixed precision + gradient clipping** `[SELF-IMPLEMENTED]`
+
 ## Files
 
 ```
 GAIA-1/
 ├── README.md       # This file (beginner-friendly guide)
-└── model.py        # Simplified implementation:
-                    #   - VectorQuantizer (codebook lookup)
-                    #   - VideoTokenizer (VQ-VAE encoder/decoder)
-                    #   - WorldModelTransformer (autoregressive prediction)
-                    #   - WorldModelPlanner (imagination-based planning)
-                    #   - demo() function to run everything
+├── model.py        # GAIA-1 model implementation
+└── train.py        # Complete 3-phase training pipeline (1290+ lines)
 ```

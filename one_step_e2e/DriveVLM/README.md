@@ -858,12 +858,67 @@ Foundation models for driving are not yet a solved problem:
 
 ---
 
+---
+
+## Training
+
+### Quick Start
+
+```bash
+python train.py --epochs 5 --batch_size 1
+```
+
+Runs with synthetic multi-modal data (images + text + trajectories).
+
+### Training Stages (Foundation Model Paradigm)
+
+DriveVLM follows the 3-stage foundation model training `[FROM PAPER]`:
+
+| Stage | What | Learning Rate | Description |
+|:---:|:---|:---:|:---|
+| 1 | **Pre-training** | 1e-4 | Vision-language alignment on driving scene descriptions |
+| 2 | **Fine-tuning** | 2e-5 | Trajectory prediction + chain-of-thought reasoning |
+| 3 | **RL (Stub)** | 5e-6 | PPO/DPO reward optimization (simplified) |
+
+### Loss Functions
+
+| Loss | Source | Weight | Purpose |
+|:---|:---:|:---:|:---|
+| Trajectory L1 | `[FROM PAPER]` | 1.0 | Waypoint regression |
+| Language CE | `[FROM PAPER]` | 0.5 | Next-token prediction for reasoning |
+| Vision-Language Alignment | `[FROM PAPER]` | 0.3 | Contrastive alignment (CLIP-style) |
+| Speed L1 | `[SELF-IMPLEMENTED]` | 0.1 | Speed prediction regularizer |
+| RL Reward (stage 3) | `[SIMPLIFIED]` | — | PPO clipped objective (stub) |
+
+### Key Arguments
+
+```bash
+python train.py \
+    --epochs 50 \
+    --batch_size 2 \
+    --lr 1e-4 \
+    --stage pretrain \      # pretrain / finetune / rl
+    --freeze_vision False \
+    --num_samples 200 \
+    --resume checkpoint.pth
+```
+
+### What the Training Script Includes
+
+- **3-stage training pipeline** (pretrain → finetune → RL) `[FROM PAPER]`
+- **Component-wise learning rates** (vision encoder vs. LLM backbone) `[FROM PAPER]`
+- **Chain-of-thought supervision** with language loss `[FROM PAPER]`
+- **Vision-language contrastive alignment** `[FROM PAPER]`
+- **RL stage stub** (PPO clipped objective, simplified) `[SIMPLIFIED]`
+- **Validation metrics:** trajectory ADE/FDE, language perplexity
+- **Mixed precision + gradient clipping** `[SELF-IMPLEMENTED]`
+- **Cosine LR with warmup** per training stage `[SELF-IMPLEMENTED]`
+
 ## Files in This Directory
 
 ```
 DriveVLM/
   README.md   -- This documentation (you are here)
   model.py    -- DriveVLM model implementation (38.7M params, simplified)
-                 Includes: VisionEncoder, SpatialAdapter, DrivingLLM,
-                 DriveVLM, compute_drivevlm_loss(), demo()
+  train.py    -- Complete training pipeline (1800+ lines, 3 stages)
 ```

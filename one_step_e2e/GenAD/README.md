@@ -656,12 +656,66 @@ The `planner_scorer/` directory in this repository implements various scoring ap
 
 ---
 
+---
+
+## Training
+
+### Quick Start
+
+```bash
+python train.py --epochs 5 --batch_size 4
+```
+
+Runs with synthetic trajectory data. No external datasets needed.
+
+### Training Components
+
+GenAD has two trainable components `[FROM PAPER]`:
+
+| Component | Loss | What It Learns |
+|:---|:---|:---|
+| **Diffusion Model** | MSE (noise prediction) | Generate diverse trajectory samples |
+| **Trajectory Scorer** | BCE + Ranking | Select the best trajectory from samples |
+
+### Loss Functions
+
+| Loss | Source | Weight | Purpose |
+|:---|:---:|:---:|:---|
+| Diffusion MSE | `[FROM PAPER]` | 1.0 | ε-prediction (noise matching) |
+| Scorer BCE | `[FROM PAPER]` | 0.5 | Binary quality classification |
+| Scorer Ranking | `[FROM PAPER]` | 0.3 | Pairwise trajectory comparison |
+| Classifier-Free Guidance | `[FROM PAPER]` | — | Conditional generation quality |
+
+### Key Arguments
+
+```bash
+python train.py \
+    --epochs 100 \
+    --batch_size 8 \
+    --lr 1e-4 \
+    --diffusion_steps 100 \
+    --num_samples_gen 64 \   # trajectories per scene at inference
+    --cfg_scale 2.0 \        # classifier-free guidance scale
+    --num_samples 500 \
+    --resume checkpoint.pth
+```
+
+### What the Training Script Includes
+
+- **DDPM training** with linear noise schedule `[FROM PAPER]`
+- **ε-prediction** (predict noise, not clean signal) `[FROM PAPER]`
+- **Classifier-free guidance** with 10% unconditional dropout `[FROM PAPER]`
+- **Trajectory scorer** with BCE + margin-based ranking loss `[FROM PAPER]`
+- **DDIM sampling** for fast inference (fewer steps) `[FROM PAPER]`
+- **Validation metrics:** min-ADE, min-FDE, diversity, scorer accuracy
+- **Mixed precision + gradient clipping** `[SELF-IMPLEMENTED]`
+- **Cosine LR with warmup** `[SELF-IMPLEMENTED]`
+
 ## Files in This Directory
 
 ```
 GenAD/
   README.md   -- This documentation (you are here)
   model.py    -- GenAD model implementation (5.2M params)
-                 Includes: SinusoidalTimeEmbedding,
-                 TrajectoryDiffusionModel, GenAD, demo()
+  train.py    -- Complete training pipeline (1470+ lines)
 ```

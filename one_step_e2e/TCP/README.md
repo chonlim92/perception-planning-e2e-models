@@ -384,4 +384,59 @@ Training both branches simultaneously provides mutual regularization:
 
 ---
 
+---
+
+## Training
+
+### Quick Start
+
+```bash
+python train.py --epochs 1 --batch-size 4
+```
+
+Note: uses `--batch-size` (hyphen, not underscore). Runs with synthetic data.
+
+### Loss Functions
+
+| Loss | Source | Weight | Purpose |
+|:---|:---:|:---:|:---|
+| Trajectory L1 | `[FROM PAPER]` | 1.0 | Waypoint prediction (trajectory branch) |
+| Control L1 | `[FROM PAPER]` | 1.0 | Steer/throttle/brake (control branch) |
+| Fused Steer L1 | `[FROM PAPER]` | 0.5 | Adaptively fused steering output |
+| Speed L1 | `[FROM PAPER]` | 0.05 | Speed prediction regularizer |
+| Feature Alignment | `[SELF-IMPLEMENTED]` | 0.1 | Align trajectory & control features |
+
+### Key Arguments
+
+```bash
+python train.py \
+    --epochs 50 \
+    --batch-size 8 \
+    --lr 1e-4 \
+    --num-waypoints 4 \
+    --num-samples 500 \
+    --resume checkpoint.pth
+```
+
+### What the Training Script Includes
+
+- **Dual-branch architecture** (trajectory + direct control) `[FROM PAPER]`
+- **Adaptive fusion** with learned confidence weights `[FROM PAPER]`
+- **Multi-task training** of both branches simultaneously `[FROM PAPER]`
+- **Speed-conditioned fusion** weighting `[FROM PAPER]`
+- **Validation metrics:** trajectory L1, control MAE, fused steer error
+- **Mixed precision + gradient clipping** `[SELF-IMPLEMENTED]`
+- **Cosine annealing LR** `[SELF-IMPLEMENTED]`
+
+## Files
+
+```
+TCP/
+├── README.md    # This documentation
+├── model.py     # TCP model implementation
+└── train.py     # Complete training pipeline (820+ lines)
+```
+
+---
+
 *This implementation is part of the [perception-planning-e2e-models](../../README.md) educational repository exploring end-to-end autonomous driving architectures.*

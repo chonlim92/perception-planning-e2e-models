@@ -73,13 +73,16 @@ perception-planning-e2e-models/
 │   ├── UniAD/                         # CVPR 2023 Best Paper
 │   │   ├── README.md                  # Architecture & paper details
 │   │   ├── model.py                   # PyTorch implementation
+│   │   ├── train.py                   # Training pipeline (multi-task, 3-stage)
 │   │   └── config.py                  # Hyperparameters
 │   ├── VAD/                           # ICCV 2023
 │   │   ├── README.md
-│   │   └── model.py
+│   │   ├── model.py
+│   │   └── train.py                   # Training (winner-take-all, multi-modal)
 │   └── ST-P3/                         # ECCV 2022
 │       ├── README.md
-│       └── model.py
+│       ├── model.py
+│       └── train.py                   # Training (BEV seg + occupancy + planning)
 │
 ├── one_step_e2e/                      # TYPE 2: One-Step E2E Models
 │   ├── README.md                      # Overview of one-step approach
@@ -87,24 +90,30 @@ perception-planning-e2e-models/
 │   │   # --- Traditional Deep Learning ---
 │   ├── TransFuser/                    # CVPR 2022 / PAMI 2023
 │   │   ├── README.md
-│   │   └── model.py
+│   │   ├── model.py
+│   │   └── train.py                   # Training (waypoint + BEV + speed)
 │   ├── InterFuser/                    # CoRL 2022
 │   │   ├── README.md
-│   │   └── model.py
+│   │   ├── model.py
+│   │   └── train.py                   # Training (density map + safety score)
 │   ├── TCP/                           # NeurIPS 2022
 │   │   ├── README.md
-│   │   └── model.py
+│   │   ├── model.py
+│   │   └── train.py                   # Training (dual-branch + adaptive fusion)
 │   │
 │   │   # --- Foundation Model / LLM-like (NEW PARADIGM) ---
 │   ├── DriveVLM/                      # 2024 - Vision Language Model
 │   │   ├── README.md
-│   │   └── model.py
+│   │   ├── model.py
+│   │   └── train.py                   # 3-stage: pretrain → finetune → RL
 │   ├── GAIA-1/                        # Wayve 2023 - World Model
 │   │   ├── README.md
-│   │   └── model.py
+│   │   ├── model.py
+│   │   └── train.py                   # 3-phase: tokenizer → world model → planner
 │   └── GenAD/                         # 2024 - Diffusion-based
 │       ├── README.md
-│       └── model.py
+│       ├── model.py
+│       └── train.py                   # DDPM training + scorer + CFG
 │
 └── planner_scorer/                    # Trajectory Scoring & Selection
     ├── README.md                      # Overview
@@ -282,13 +291,50 @@ python planner_scorer/learned/mlp_scorer.py
 python planner_scorer/learned/transformer_scorer.py
 ```
 
-### Train the Scorer
+### Train Any Model
+
+Every model has a complete `train.py` with synthetic data (no external datasets needed):
 
 ```bash
-cd planner_scorer/learned
-python train.py --model mlp --loss combined --epochs 50
-python train.py --model transformer --loss contrastive --epochs 50
+# Two-step models
+python two_step_e2e/UniAD/train.py --epochs 5 --batch_size 2
+python two_step_e2e/VAD/train.py --epochs 5 --batch_size 2
+python two_step_e2e/ST-P3/train.py --epochs 5 --batch_size 2
+
+# One-step models (traditional)
+python one_step_e2e/TransFuser/train.py --epochs 5 --batch_size 1
+python one_step_e2e/InterFuser/train.py --epochs 5 --batch_size 2
+python one_step_e2e/TCP/train.py --epochs 1 --batch-size 4
+
+# One-step models (foundation model paradigm)
+python one_step_e2e/DriveVLM/train.py --epochs 5 --batch_size 1
+python one_step_e2e/GAIA-1/train.py --phase tokenizer --epochs_tokenizer 5
+python one_step_e2e/GenAD/train.py --epochs 5 --batch_size 4
+
+# Planner Scorer
+python planner_scorer/learned/train.py --model mlp --loss combined --epochs 50
+python planner_scorer/learned/train.py --model transformer --loss contrastive --epochs 50
 ```
+
+Each training script includes:
+- Synthetic dataset (runs without external data)
+- Full loss functions from the papers
+- Training + validation loops with metrics
+- Checkpoint save/load/resume
+- Mixed precision (AMP) support
+- Learning rate scheduling
+
+### Attribution System
+
+All training scripts clearly mark what comes from the original papers vs. our implementation:
+
+| Tag | Meaning |
+|:---|:---|
+| `[FROM PAPER]` | Algorithm/loss/technique directly described in the original paper |
+| `[SELF-IMPLEMENTED]` | Our implementation of concepts not fully detailed in the paper |
+| `[SIMPLIFIED]` | Paper's approach simplified for clarity (noted what was changed) |
+
+This helps you distinguish research contributions from engineering decisions.
 
 ---
 

@@ -436,12 +436,55 @@ TransFuser was one of the first methods to demonstrate competitive performance u
 
 ---
 
+---
+
+## Training
+
+### Quick Start
+
+```bash
+python train.py --epochs 5 --batch_size 1
+```
+
+Runs with synthetic CARLA-like data (no simulator needed).
+
+### Loss Functions
+
+| Loss | Source | Weight | Purpose |
+|:---|:---:|:---:|:---|
+| Waypoint L1 | `[FROM PAPER]` | 1.0 | Future waypoint regression |
+| BEV Segmentation CE | `[FROM PAPER]` | 0.5 | BEV semantic map auxiliary |
+| Speed L1 | `[FROM PAPER]` | 0.1 | Speed prediction |
+| Target Point L1 | `[SELF-IMPLEMENTED]` | 0.2 | GPS target point regression |
+
+### Key Arguments
+
+```bash
+python train.py \
+    --epochs 50 \
+    --batch_size 4 \
+    --lr 1e-4 \
+    --num_waypoints 4 \
+    --lidar_input True \
+    --num_samples 200 \
+    --resume checkpoint.pth
+```
+
+### What the Training Script Includes
+
+- **Multi-modal input** (camera RGB + LiDAR BEV) with fusion `[FROM PAPER]`
+- **Multi-scale transformer fusion** at 4 resolution levels `[FROM PAPER]`
+- **Auxiliary BEV segmentation** for representation learning `[FROM PAPER]`
+- **Speed prediction head** as regularizer `[FROM PAPER]`
+- **Validation metrics:** waypoint L1, BEV IoU, speed MAE
+- **Mixed precision + gradient clipping** `[SELF-IMPLEMENTED]`
+- **Cosine annealing LR** `[SELF-IMPLEMENTED]`
+
 ## Files in This Directory
 
 ```
 TransFuser/
   README.md   -- This documentation (you are here)
   model.py    -- TransFuser model implementation (40.2M params)
-                 Includes: TransformerFusionBlock, ResNetStage,
-                 TransFuser, PIDController, waypoints_to_control()
+  train.py    -- Complete training pipeline (890+ lines)
 ```

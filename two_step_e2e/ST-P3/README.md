@@ -417,10 +417,55 @@ Timeline of Two-Step E2E Models:
 
 ---
 
+---
+
+## Training
+
+### Quick Start
+
+```bash
+python train.py --epochs 5 --batch_size 2
+```
+
+Runs with synthetic data (no external datasets needed).
+
+### Loss Functions
+
+| Loss | Source | Weight | Purpose |
+|:---|:---:|:---:|:---|
+| BEV Segmentation CE | `[FROM PAPER]` | 1.0 | Bird's eye view semantic map |
+| Occupancy BCE | `[FROM PAPER]` | 0.5 | Future occupancy grid prediction |
+| Planning L1 | `[FROM PAPER]` | 2.0 | Waypoint regression |
+| Temporal Consistency | `[SELF-IMPLEMENTED]` | 0.1 | Smooth ConvGRU hidden states |
+
+### Key Arguments
+
+```bash
+python train.py \
+    --epochs 50 \
+    --batch_size 4 \
+    --lr 1e-4 \
+    --temporal_length 4 \
+    --bev_size 200 \
+    --num_samples 500 \
+    --resume checkpoint.pth
+```
+
+### What the Training Script Includes
+
+- **Temporal sequence training** with T=4 frame history `[FROM PAPER]`
+- **BEV segmentation** using Lift-Splat-Shoot depth distribution `[FROM PAPER]`
+- **Occupancy prediction** for future grid forecasting `[FROM PAPER]`
+- **ConvGRU temporal fusion** across frames `[FROM PAPER]`
+- **Validation metrics:** BEV IoU, planning L1, occupancy accuracy
+- **Mixed precision + gradient clipping** `[SELF-IMPLEMENTED]`
+- **Step LR scheduler** `[SELF-IMPLEMENTED]`
+
 ## Files
 
 ```
 ST-P3/
 ├── README.md      # This file (beginner-friendly guide)
-└── model.py       # Simplified ST-P3 implementation (10.7M params)
+├── model.py       # ST-P3 implementation (10.7M params)
+└── train.py       # Complete training pipeline (870+ lines)
 ```
