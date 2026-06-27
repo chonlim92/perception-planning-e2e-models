@@ -1,0 +1,6 @@
+__pycache__/
+checkpoints/
+*.pth
+*.pt
+output_*/
+checkpoints_*/
