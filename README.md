@@ -70,6 +70,7 @@ perception-planning-e2e-models/
 ├── requirements.txt                   # Python dependencies
 ├── test_gradient_flow.py              # Gradient flow verification tests
 ├── tests/
+│   ├── __init__.py                    # Package init
 │   └── edge_case_tests.py            # Comprehensive edge case stress tests
 │
 ├── two_step_e2e/                      # TYPE 1: Two-Step E2E Models
@@ -485,6 +486,9 @@ All 13 model implementations have been reviewed by a panel of 5 independent ML e
 | Scheduler collapses per-group LRs | High | DriveVLM | Per-group `lr_scale` preservation |
 | Ranking loss executes only once | High | Planner Scorer | Vectorized pairwise margin computation |
 | RSS safe distance can be negative | High | Safety Checker | Clamped to `max(0, d_safe)` |
+| No dt input validation | High | Safety Checker | `ValueError` if `dt <= 0` |
+| Hardcoded num_heads=12 crashes | High | DriveVLM | Adaptive num_heads loop |
+| All-masked input crashes scorer | Medium | Transformer Scorer | Short-circuit when all masked |
 
 **Full validation report:** [`docs/expert_validation_report.md`](docs/expert_validation_report.md)
 

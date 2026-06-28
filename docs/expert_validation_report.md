@@ -123,7 +123,37 @@ Five ML expert agents conducted an independent review of all 13 model implementa
 
 ---
 
-### 9. [MEDIUM] planner_scorer/learned/mlp_scorer.py — Incorrect Max-Pool Masking
+### 9. [HIGH] planner_scorer/classical/safety_checker.py — Missing dt Input Validation
+
+**Problem:** The `check()` method accepted `dt` without validation. A zero or negative `dt` would cause division-by-zero in TTC, RSS, and kinematic feasibility calculations, potentially producing `inf` or `NaN` results silently.
+
+**Impact:** Silent corruption of all safety check results when called with invalid time step.
+
+**Fix:** Added `if dt <= 0: raise ValueError(...)` at the start of `check()`.
+
+---
+
+### 10. [HIGH] DriveVLM/model.py — Hardcoded num_heads Incompatible with Arbitrary embed_dim
+
+**Problem:** `VisionEncoder` and `SpatialAdapter` hardcoded `num_heads=12`. PyTorch `MultiheadAttention` requires `embed_dim % num_heads == 0`. Any `visual_dim` not divisible by 12 (e.g., 128, 64, 256) caused a runtime crash.
+
+**Impact:** Model instantiation fails for common embedding dimensions.
+
+**Fix:** Added adaptive loop: `while embed_dim % num_heads != 0 and num_heads > 1: num_heads -= 1`.
+
+---
+
+### 11. [MEDIUM] planner_scorer/learned/transformer_scorer.py — Crash on All-Masked Input
+
+**Problem:** When `padding_mask` is all-True (all tokens masked), PyTorch's `TransformerEncoder` with nested tensors crashes or produces NaN. This occurs with empty scenes.
+
+**Impact:** Runtime crash or NaN output when scoring trajectories with no scene context.
+
+**Fix:** Short-circuit in `encode_scene()`: if `padding_mask.all()`, return tokens without self-attention.
+
+---
+
+### 12. [MEDIUM] planner_scorer/learned/mlp_scorer.py — Incorrect Max-Pool Masking
 
 **Problem:** Invalid agent features were zeroed before `max(dim=1)`. When all valid agent features are negative, the zeroed invalid entries would incorrectly "win" the max-pool.
 
@@ -133,7 +163,7 @@ Five ML expert agents conducted an independent review of all 13 model implementa
 
 ---
 
-### 10. [MEDIUM] VAD/train.py — Missing tqdm Import Fallback
+### 13. [MEDIUM] VAD/train.py — Missing tqdm Import Fallback
 
 **Problem:** All other training scripts have a `try/except ImportError` fallback for tqdm, but VAD's didn't, causing a crash if tqdm is not installed.
 
@@ -183,7 +213,7 @@ These are acceptable design choices or minor improvements that don't affect corr
 
 ### Numerical (Expert 3)
 - GAIA-1 `frame_sep` parameter is defined but never used (dead code)
-- DriveVLM hardcodes `num_heads=12` — `visual_dim` must be divisible by 12
+- ~~DriveVLM hardcodes `num_heads=12`~~ — **FIXED** (adaptive num_heads loop added)
 
 ---
 
@@ -199,7 +229,9 @@ These are acceptable design choices or minor improvements that don't affect corr
 | `two_step_e2e/VAD/train.py` | Fixed scheduler stepping + tqdm fallback |
 | `planner_scorer/learned/train.py` | Fixed ranking loss implementation |
 | `planner_scorer/learned/mlp_scorer.py` | Fixed max-pool masking |
-| `planner_scorer/classical/safety_checker.py` | Clamped RSS safe distance to >= 0 |
+| `planner_scorer/classical/safety_checker.py` | Clamped RSS safe distance to >= 0; added dt > 0 validation |
+| `one_step_e2e/DriveVLM/model.py` | Adaptive num_heads when embed_dim not divisible by 12 |
+| `planner_scorer/learned/transformer_scorer.py` | Skip self-attention when all tokens masked (prevents NaN) |
 
 ---
 
