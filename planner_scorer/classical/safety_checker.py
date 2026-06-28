@@ -68,6 +68,9 @@ class SafetyChecker:
         Returns:
             dict with pass/fail for each check and overall result
         """
+        if dt <= 0:
+            raise ValueError(f"dt must be positive, got {dt}")
+
         results = {}
 
         results['ttc'] = self._check_ttc(
