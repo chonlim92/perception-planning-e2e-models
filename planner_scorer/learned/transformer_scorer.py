@@ -86,6 +86,10 @@ class TransformerScorer(nn.Module):
         # Padding mask: True = ignore
         padding_mask = torch.cat([~agent_mask, ~map_mask], dim=1)
 
+        # If all tokens are masked, skip self-attention to avoid NaN/errors
+        if padding_mask.all():
+            return scene_tokens, padding_mask
+
         # Scene self-attention
         scene_tokens = self.scene_encoder(scene_tokens, src_key_padding_mask=padding_mask)
         return scene_tokens, padding_mask

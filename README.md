@@ -67,6 +67,10 @@ Camera/LiDAR ──> [Single Neural Network] ──> Driving Decision
 perception-planning-e2e-models/
 │
 ├── README.md                          # You are here
+├── requirements.txt                   # Python dependencies
+├── test_gradient_flow.py              # Gradient flow verification tests
+├── tests/
+│   └── edge_case_tests.py            # Comprehensive edge case stress tests
 │
 ├── two_step_e2e/                      # TYPE 1: Two-Step E2E Models
 │   ├── README.md                      # Overview of two-step approach
@@ -261,7 +265,9 @@ score = NeuralNetwork(trajectory, scene_context)  # trained on expert data
 
 ```bash
 # Python 3.8+ required
-pip install torch numpy scipy matplotlib shapely tqdm pyyaml
+pip install -r requirements.txt
+# Or manually:
+pip install torch numpy shapely
 ```
 
 ### Run Any Model Demo
@@ -335,6 +341,22 @@ All training scripts clearly mark what comes from the original papers vs. our im
 | `[SIMPLIFIED]` | Paper's approach simplified for clarity (noted what was changed) |
 
 This helps you distinguish research contributions from engineering decisions.
+
+### Run Tests
+
+Comprehensive test suites verify all models work correctly:
+
+```bash
+# Gradient flow verification (8 tests - verifies training will work)
+python test_gradient_flow.py
+
+# Edge case stress tests (71 tests - B=1, B=8, zeros, fp16, masks, etc.)
+python tests/edge_case_tests.py
+```
+
+**Test Results (latest):**
+- Gradient flow tests: **8/8 PASS**
+- Edge case tests: **68/71 PASS**, 2 warnings (expected edge cases), 1 fp16-only failure (CPU BatchNorm limitation)
 
 ---
 

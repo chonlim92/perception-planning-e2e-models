@@ -31,6 +31,10 @@ class VisionEncoder(nn.Module):
         self.patch_size = patch_size
         self.num_patches = (img_size // patch_size) ** 2
 
+        # Adapt num_heads to be compatible with embed_dim
+        while embed_dim % num_heads != 0 and num_heads > 1:
+            num_heads -= 1
+
         # Patch embedding
         self.patch_embed = nn.Conv2d(3, embed_dim, patch_size, stride=patch_size)
         self.pos_embed = nn.Parameter(
@@ -87,8 +91,13 @@ class SpatialAdapter(nn.Module):
         self.query_tokens = nn.Parameter(
             torch.randn(1, num_query_tokens, visual_dim) * 0.02)
 
+        # Adapt num_heads to be compatible with visual_dim
+        num_heads = 12
+        while visual_dim % num_heads != 0 and num_heads > 1:
+            num_heads -= 1
+
         self.cross_attn = nn.MultiheadAttention(
-            visual_dim, num_heads=12, batch_first=True)
+            visual_dim, num_heads=num_heads, batch_first=True)
         self.norm = nn.LayerNorm(visual_dim)
 
         self.proj = nn.Sequential(
